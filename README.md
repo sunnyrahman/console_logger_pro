@@ -5,9 +5,9 @@ A Flutter package for logging HTTP and Dio requests in a clean, readable console
 [![pub package](https://img.shields.io/pub/v/console_logger_pro.svg)](https://pub.dev/packages/console_logger_pro)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Debugging API traffic in the Flutter console can get messy, especially when parallel requests print over each other or when you need to copy auth tokens into Postman. `console_logger_pro` groups each request and response into a distinct visual box and automatically extracts tokens.
+`console_logger_pro` is a zero-boilerplate network logger for Flutter that formats messy API logs into clean, color-coded console blocks.
 
-It works globally through Dart's `HttpOverrides`, so you don't need to configure individual interceptors for `http`, `Dio`, or `HttpClient`.
+With just a single call in `main()`, it captures traffic across `http`, `Dio`, and native `HttpClient`—preventing logs from overlapping during concurrent requests, color-coding status codes, and copying auth tokens directly to your clipboard for effortless testing.
 
 ## Getting started
 
