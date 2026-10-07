@@ -1,0 +1,8 @@
+.dart_tool/
+build/
+.idea/
+*.iml
+.DS_Store
+example/ios/
+example/.dart_tool/
+example/build/
