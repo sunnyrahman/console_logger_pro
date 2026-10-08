@@ -7,7 +7,7 @@ A Flutter package for logging HTTP and Dio requests in a clean, readable console
 
 `console_logger_pro` is a zero-boilerplate network logger for Flutter that formats messy API logs into clean, color-coded console blocks.
 
-With just a single call in `main()`, it captures traffic across `http`, `Dio`, and native `HttpClient`—preventing logs from overlapping during concurrent requests, color-coding status codes, and copying auth tokens directly to your clipboard for effortless testing.
+With just a single call in `main()`, it captures traffic across `http`, `Dio`, and native `HttpClient` - preventing logs from overlapping during concurrent requests, color-coding status codes, and copying auth tokens directly to your clipboard for effortless testing.
 
 ## Getting started
 
