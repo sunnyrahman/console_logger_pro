@@ -54,13 +54,16 @@ Here is how network requests appear in the debug console with color-coded HTTP m
   <img src="https://raw.githubusercontent.com/sunnyrahman/console_logger_pro/main/screenshots/preview2.png" alt="Console Output Detailed Preview" width="100%"/>
 </p>
 
-## Features
+## Key Features
 
-- **Global capture**: Automatically logs requests made via `http`, `Dio`, and `dart:io HttpClient`.
-- **Atomic output**: Each request and response is framed in a single block, avoiding jumbled logs from concurrent network calls.
-- **Token extraction**: Detects Bearer tokens, JWTs, and API keys, displaying them separately and optionally copying them to your clipboard.
-- **Configurable spacing**: Adds blank lines between requests so your console remains readable during heavy API usage.
-- **Debug-only by default**: Disabled automatically in production builds (`kDebugMode`).
+- **Zero-Boilerplate Setup**: Just one line `ConsoleLoggerPro.install()` in `main()`—captures all `http`, `Dio`, and native `dart:io` traffic with zero interceptors required.
+- **Full Request Visibility**: Dedicated `[Request Headers]` (Bright Cyan) and `[Request Body]` (Pink) rendered right above `[Response]` (Gold) so you know exactly what payload and auth went out.
+- **Bulletproof Error & Failure Logs**: When an API call fails (4xx, 5xx, or network timeouts), it prints the complete request headers, payload, response error, and stack trace frames.
+- **Auto-Copy Security Tokens**: Instantly detects JWTs, Bearer tokens, and API keys, highlights them, and automatically copies them to your clipboard for zero-click Postman pasting.
+- **UI Click & Event Logging**: Track button presses and taps with `ConsoleLoggerPro.click('...')` or `onClick(...)` styled in vibrant orange boxes with event payloads.
+- **Complete In-App Debug Suite**: Built-in structured logging for `debug()`, `print()`, `info()`, `warning()`, and `error()`—all formatted with clean box borders and dedicated colors.
+- **Atomic, Concurrent-Safe Output**: Each network call and debug message prints in an isolated, synchronized box with customizable spacing (`lineGap`) to prevent messy overlapping console lines.
+- **100% Production-Safe**: Automatically disabled outside `kDebugMode` with zero overhead in production.
 
 ## Customization
 
@@ -71,7 +74,7 @@ ConsoleLoggerPro.install(
   logger: ConsoleLoggerPro(
     lineGap: 2,                 // Empty lines between requests (default: 3)
     autoCopyToken: true,        // Copy detected tokens to clipboard (default: true)
-    showRequestHeaders: false,  // Print request headers (default: false)
+    showRequestHeaders: true,   // Print request headers above response (default: true)
     showResponseHeaders: false, // Print response headers (default: false)
     lineWidth: 80,              // Frame width in characters (default: 80)
     maxLines: 300,              // Payload line limit before truncation (default: 300)
@@ -93,25 +96,48 @@ ConsoleLoggerPro.install(
   logger: ConsoleLoggerPro(
     theme: const LogTheme(
       endpoint: LogColor.cyan,
+      requestHeader: LogColor.brightCyan,
+      responseHeader: LogColor.gold,
       success: LogColor.green,
       error: LogColor.red,
       response: LogColor.yellow,
+      body: LogColor.pink,
+      click: LogColor.orange,
+      debug: LogColor.violet,
       border: LogColor.gray,
     ),
   ),
 );
 ```
 
-## Manual Logging
+## Manual & UI Event Logging
 
-You can also use the logger for non-HTTP messages or general app events:
+You can use the logger anywhere in your app (buttons, clicks, debugging, and printing) with clean, structured boxes and dedicated colors:
 
 ```dart
-// General log
-ConsoleLoggerPro.log('Order created', data: {'orderId': 452});
+// 1. UI Click / Tap Interaction
+ElevatedButton(
+  onPressed: () {
+    ConsoleLoggerPro.click('Login button clicked', data: {
+      'email': emailController.text,
+    });
+  },
+  child: const Text('Login'),
+);
 
-// User action tracking
-ConsoleLoggerPro.userData('User opened checkout screen');
+// 2. State & Variable Debugging
+ConsoleLoggerPro.debug('User profile state updated', data: user.toJson());
+
+// 3. Form / User Data Submission
+ConsoleLoggerPro.userData('Registration Form Submitted', formData);
+
+// 4. Clean Print Replacement
+ConsoleLoggerPro.print('Screen navigated: /dashboard');
+
+// 5. Info, Warning & Error Handling
+ConsoleLoggerPro.info('Network cache refreshed');
+ConsoleLoggerPro.warning('Session expiring in 2 minutes');
+ConsoleLoggerPro.error('Payment checkout failed', error: e, stackTrace: stack);
 ```
 
 ## How It Works

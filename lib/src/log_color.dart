@@ -29,6 +29,10 @@ class LogColor {
   static const LogColor gray = LogColor('90'); // Subtle Gray for borders
   static const LogColor silver = LogColor('37');
   static const LogColor white = LogColor('97'); // Crisp White
+  static const LogColor orange = LogColor.ansi256(208); // Vibrant Orange
+  static const LogColor violet = LogColor.ansi256(141); // Lavender / Violet
+  static const LogColor teal = LogColor.ansi256(43); // Mint / Teal
+
 
   /// Wraps [text] with ANSI escape codes and restores color with reset `\x1B[0m`.
   String paint(String text, {bool bold = false, bool underline = false}) {

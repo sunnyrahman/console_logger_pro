@@ -310,7 +310,7 @@ class _LoggingRequest implements HttpClientRequest {
           () => binary = isBinaryMime(response.headers.contentType?.mimeType));
       if (binary && !_config.logBinary) return response;
       return _LoggingResponse(response, _config, info);
-    } catch (error) {
+    } catch (error, stackTrace) {
       _safe(() => _config.logger.logApi(
             method: info.method,
             url: info.uri.toString(),
@@ -318,6 +318,7 @@ class _LoggingRequest implements HttpClientRequest {
             requestBody: info.body?.value,
             requestBodyType: info.body?.type,
             error: error,
+            stackTrace: stackTrace,
             duration: info.stopwatch.elapsed,
           ));
       rethrow;
@@ -479,17 +480,19 @@ class _LoggingResponse extends Stream<List<int>> implements HttpClientResponse {
     });
   }
 
-  void _logFailure(Object error) {
+  void _logFailure(Object error, [StackTrace? stackTrace]) {
     if (_logged) return;
     _logged = true;
     _safe(() => _config.logger.logApi(
           method: _info.method,
           url: _info.uri.toString(),
           statusCode: _inner.statusCode,
+          statusMessage: _inner.reasonPhrase,
           requestHeaders: _info.headers,
           requestBody: _info.body?.value,
           requestBodyType: _info.body?.type,
           error: error,
+          stackTrace: stackTrace,
           duration: _info.stopwatch.elapsed,
         ));
   }
@@ -581,7 +584,7 @@ class _CaptureSubscription implements StreamSubscription<List<int>> {
   }
 
   void _handleError(Object error, StackTrace stack) {
-    _response._logFailure(error);
+    _response._logFailure(error, stack);
     final handler = _onError;
     if (handler == null) {
       Zone.current.handleUncaughtError(error, stack);

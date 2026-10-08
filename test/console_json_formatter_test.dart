@@ -143,4 +143,131 @@ void main() {
     expect(nextApiIdx, greaterThan(gapIdx),
         reason: 'Next API must come AFTER gap space');
   });
+
+  test('logApi outputs [Request Headers] and [Request Body] above [Response]', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logApi(
+      method: 'POST',
+      url: 'https://api.test/login',
+      statusCode: 200,
+      statusMessage: 'OK',
+      requestHeaders: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer sample_token_123',
+      },
+      requestBody: {
+        'email': 'user@example.com',
+        'password': 'secretpassword',
+      },
+      requestBodyType: 'form-data',
+      responseBody: {'success': true, 'token': 'jwt_abc'},
+    );
+
+    final text = lines.join('\n');
+    expect(text, contains('[Request Headers]'));
+    expect(text, contains('content-type'));
+    expect(text, contains('[Request Body (form-data)]'));
+    expect(text, contains('user@example.com'));
+    expect(text, contains('[Response]'));
+    expect(text, contains('jwt_abc'));
+
+    // Check order: Request Headers -> Request Body -> Response
+    final headersIdx = text.indexOf('[Request Headers]');
+    final bodyIdx = text.indexOf('[Request Body (form-data)]');
+    final responseIdx = text.indexOf('[Response]');
+
+    expect(headersIdx, lessThan(bodyIdx));
+    expect(bodyIdx, lessThan(responseIdx));
+  });
+
+  test('failed request logs complete request headers, body and error', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      showRequestHeaders: false, // even when false, failed request MUST show full request
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logApi(
+      method: 'POST',
+      url: 'https://api.test/failed-endpoint',
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+      requestHeaders: {'x-api-key': 'secret-key-999'},
+      requestBody: {'param': 'test_payload'},
+      error: 'Invalid credentials provided',
+    );
+
+    final text = lines.join('\n');
+    expect(text, contains('[401 Unauthorized]'));
+    expect(text, contains('[Request Headers]'));
+    expect(text, contains('secret-key-999'));
+    expect(text, contains('[Request Body]'));
+    expect(text, contains('test_payload'));
+    expect(text, contains('[Error]'));
+    expect(text, contains('Invalid credentials provided'));
+  });
+
+  test('click and onClick format into structured section', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logClick('Login Button Clicked', data: {'screen': 'LoginScreen'});
+    final text = lines.join('\n');
+    expect(text, contains('[ON CLICK]  Login Button Clicked'));
+    expect(text, contains('[Event Data]'));
+    expect(text, contains('LoginScreen'));
+    expect(text, contains('┌'));
+    expect(text, contains('└'));
+  });
+
+  test('debug formats into structured section with data', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logDebug('State changed', data: {'isLoading': false, 'count': 5});
+    final text = lines.join('\n');
+    expect(text, contains('[DEBUG]  State changed'));
+    expect(text, contains('[Debug Data]'));
+    expect(text, contains('isLoading'));
+    expect(text, contains('┌'));
+    expect(text, contains('└'));
+  });
+
+  test('print and error format into clean section with borders and stack trace', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logPrint('Custom print message');
+    logger.logException(
+      'Payment processing failed',
+      error: 'NetworkTimeoutException',
+      stackTrace: StackTrace.current,
+    );
+
+    final text = lines.join('\n');
+    expect(text, contains('[PRINT]  Custom print message'));
+    expect(text, contains('[ERROR]  Payment processing failed'));
+    expect(text, contains('[Error]'));
+    expect(text, contains('NetworkTimeoutException'));
+  });
 }

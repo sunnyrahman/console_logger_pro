@@ -33,6 +33,13 @@ class LogTheme {
     this.response = LogColor.yellow,
     this.body = LogColor.pink,
     this.params = LogColor.brightBlue,
+    this.requestHeader = LogColor.brightCyan,
+    this.responseHeader = LogColor.gold,
+    this.request = LogColor.cyan,
+    this.click = LogColor.orange,
+    this.debug = LogColor.violet,
+    this.info = LogColor.brightBlue,
+    this.warning = LogColor.yellow,
     this.log = LogColor.white,
     this.token = LogColor.pink,
     this.userData = LogColor.magenta,
@@ -84,6 +91,27 @@ class LogTheme {
 
   /// Query parameters.
   final LogColor params;
+
+  /// Request headers section.
+  final LogColor requestHeader;
+
+  /// Response headers section.
+  final LogColor responseHeader;
+
+  /// Overall request section or payload.
+  final LogColor request;
+
+  /// UI Click / Tap / Interaction events.
+  final LogColor click;
+
+  /// Debug logs & state inspections.
+  final LogColor debug;
+
+  /// Informational messages.
+  final LogColor info;
+
+  /// Warning messages.
+  final LogColor warning;
 
   /// General messages from [ConsoleLoggerPro.log].
   final LogColor log;

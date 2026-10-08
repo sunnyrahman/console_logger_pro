@@ -37,7 +37,7 @@ class ConsoleLoggerPro {
   ConsoleLoggerPro({
     this.theme = const LogTheme(),
     bool? enabled,
-    this.showRequestHeaders = false,
+    this.showRequestHeaders = true,
     this.showResponseHeaders = false,
     this.showTokens = true,
     this.repeatTokens = true,
@@ -129,9 +129,110 @@ class ConsoleLoggerPro {
   /// Stops automatic capture started by [install].
   static void uninstall() => uninstallHttpCapture();
 
-  /// Prints a general console message with clean `[LOG]` tag.
-  static void log(Object? message, {Object? data}) =>
-      shared.logMessage(message, data: data);
+  /// Logs a UI click or tap interaction event with styled [ON CLICK] badge.
+  ///
+  /// ```dart
+  /// ElevatedButton(
+  ///   onPressed: () {
+  ///     ConsoleLoggerPro.click('Login button pressed', data: {'email': email});
+  ///   },
+  ///   child: const Text('Login'),
+  /// )
+  /// ```
+  static void click(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logClick(message, data: data, tag: tag, boxed: boxed);
+
+  /// Alias for [click].
+  static void onClick(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logClick(message, data: data, tag: tag, boxed: boxed);
+
+  /// Logs a debug inspection or state check with styled [DEBUG] badge.
+  ///
+  /// ```dart
+  /// ConsoleLoggerPro.debug('User profile loaded', data: user.toJson());
+  /// ```
+  static void debug(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logDebug(message, data: data, tag: tag, boxed: boxed);
+
+  /// Direct replacement for standard `print()`, wrapped in a clean, colorized box.
+  ///
+  /// ```dart
+  /// ConsoleLoggerPro.print('Screen navigated: /dashboard');
+  /// ```
+  static void print(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logPrint(message, data: data, tag: tag, boxed: boxed);
+
+  /// Prints an informational message with styled [INFO] badge.
+  static void info(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logInfo(message, data: data, tag: tag, boxed: boxed);
+
+  /// Prints a warning message with styled [WARNING] badge.
+  static void warning(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logWarning(message, data: data, tag: tag, boxed: boxed);
+
+  /// Alias for [warning].
+  static void warn(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logWarning(message, data: data, tag: tag, boxed: boxed);
+
+  /// Prints an error message with styled [ERROR] badge, error details, and stack trace.
+  static void error(
+    Object? message, {
+    Object? error,
+    StackTrace? stackTrace,
+    Object? data,
+    String? tag,
+  }) =>
+      shared.logException(
+        message,
+        error: error,
+        stackTrace: stackTrace,
+        data: data,
+        tag: tag,
+      );
+
+  /// Prints a general console message with styled [LOG] tag.
+  static void log(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) =>
+      shared.logMessage(message, data: data, tag: tag, boxed: boxed);
 
   /// Prints data submitted from UI / form inputs with clean `[USER DATA]` tag.
   static void userData(String title, Object? data) =>
@@ -165,11 +266,19 @@ class ConsoleLoggerPro {
       box.row(_statusLine(statusCode, statusMessage, duration, failed));
     }
     _writeRequest(
-        box, url, requestHeaders, requestBody, requestBodyType, tokens);
+      box,
+      url,
+      requestHeaders,
+      requestBody,
+      requestBodyType,
+      tokens,
+      failed: failed,
+    );
     if (showResponseHeaders &&
         responseHeaders != null &&
         responseHeaders.isNotEmpty) {
-      _section(box, 'Response Headers', responseHeaders, theme.key, tokens);
+      _section(box, 'Response Headers', responseHeaders, theme.responseHeader,
+          tokens);
     }
     if (responseBody != null && responseBody != '') {
       _section(
@@ -241,33 +350,172 @@ class ConsoleLoggerPro {
         duration: duration,
       );
 
+  /// Logs a UI click or tap interaction.
+  void logClick(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'ON CLICK',
+      badgeColor: theme.click,
+      message: message,
+      data: data,
+      dataSectionTitle: 'Event Data',
+      boxed: boxed,
+    );
+  }
+
+  /// Logs a debug state or variable inspection.
+  void logDebug(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'DEBUG',
+      badgeColor: theme.debug,
+      message: message,
+      data: data,
+      dataSectionTitle: 'Debug Data',
+      boxed: boxed,
+    );
+  }
+
+  /// Formats and logs a custom message (replaces standard print).
+  void logPrint(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'PRINT',
+      badgeColor: theme.log,
+      message: message,
+      data: data,
+      boxed: boxed,
+    );
+  }
+
+  /// Logs an informational message.
+  void logInfo(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'INFO',
+      badgeColor: theme.info,
+      message: message,
+      data: data,
+      boxed: boxed,
+    );
+  }
+
+  /// Logs a warning message.
+  void logWarning(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'WARNING',
+      badgeColor: theme.warning,
+      message: message,
+      data: data,
+      boxed: boxed,
+    );
+  }
+
+  /// Logs an application exception or error with stack trace.
+  void logException(
+    Object? message, {
+    Object? error,
+    StackTrace? stackTrace,
+    Object? data,
+    String? tag,
+  }) {
+    _logSection(
+      badge: tag ?? 'ERROR',
+      badgeColor: theme.error,
+      message: message,
+      data: data,
+      error: error,
+      stackTrace: stackTrace,
+      boxed: true,
+    );
+  }
+
   /// Instance version of [log].
-  void logMessage(Object? message, {Object? data}) {
-    if (!enabled) return;
-    final head = '${theme.paint(theme.log, '[LOG]', bold: true)}  '
-        '${theme.paint(theme.log, '$message')}';
-    if (data == null) {
-      _printer(head);
-      return;
-    }
-    final box = _Box(this)..top();
-    box.row(head);
-    box.block(_render(data, theme.log, <DetectedToken>[]));
-    box
-      ..bottom()
-      ..flush();
+  void logMessage(
+    Object? message, {
+    Object? data,
+    String? tag,
+    bool boxed = true,
+  }) {
+    _logSection(
+      badge: tag ?? 'LOG',
+      badgeColor: theme.log,
+      message: message,
+      data: data,
+      boxed: boxed,
+    );
   }
 
   /// Instance version of [userData].
   void logUserData(String title, Object? data) {
     if (!enabled) return;
-    final box = _Box(this)..top();
+    final box = _Box(this, gap: 1)..top();
     box.row('${theme.paint(theme.userData, '[USER DATA]', bold: true)}  '
         '${theme.paint(theme.userData, title)}');
     if (data != null) {
-      box.divider();
+      box.section('Form Data', theme.userData);
       box.block(_render(_normalize(data), theme.userData, <DetectedToken>[]));
     }
+    box
+      ..bottom()
+      ..flush();
+  }
+
+  void _logSection({
+    required String badge,
+    required LogColor badgeColor,
+    required Object? message,
+    Object? data,
+    String? dataSectionTitle,
+    Object? error,
+    StackTrace? stackTrace,
+    bool boxed = true,
+  }) {
+    if (!enabled) return;
+    final badgeText = theme.paint(badgeColor, '[$badge]', bold: true);
+    final msgText =
+        message == null ? '' : '  ${theme.paint(badgeColor, '$message')}';
+    final head = '$badgeText$msgText';
+
+    if (!boxed && data == null && error == null) {
+      _printer(head);
+      return;
+    }
+
+    final box = _Box(this, gap: 1)..top();
+    box.row(head);
+
+    if (data != null) {
+      final sectionTitle = dataSectionTitle ?? 'Data';
+      box.section(sectionTitle, badgeColor);
+      box.block(_render(_normalize(data), badgeColor, <DetectedToken>[]));
+    }
+
+    if (error != null) {
+      _writeError(box, error, stackTrace);
+    }
+
     box
       ..bottom()
       ..flush();
@@ -302,21 +550,24 @@ class ConsoleLoggerPro {
     Map<String, dynamic>? headers,
     Object? body,
     String? bodyType,
-    List<DetectedToken> tokens,
-  ) {
+    List<DetectedToken> tokens, {
+    bool failed = false,
+  }) {
     final params = _queryOf(url);
     if (params.isNotEmpty) {
-      _section(box, 'Params', params, theme.params, tokens);
+      _section(box, 'Request Params', params, theme.params, tokens);
     }
+    final shouldShowHeaders = showRequestHeaders || failed;
     if (headers != null && headers.isNotEmpty) {
-      if (showRequestHeaders) {
-        _section(box, 'Headers', headers, theme.key, tokens);
+      if (shouldShowHeaders) {
+        _section(box, 'Request Headers', headers, theme.requestHeader, tokens);
       } else {
-        _render(headers, theme.key, tokens); // only to detect tokens
+        _render(headers, theme.requestHeader, tokens); // only to detect tokens
       }
     }
     if (body != null && body != '') {
-      final title = bodyType == null ? 'Body' : 'Body ($bodyType)';
+      final title =
+          bodyType == null ? 'Request Body' : 'Request Body ($bodyType)';
       _section(box, title, _normalize(body), theme.body, tokens);
     }
   }
@@ -412,9 +663,10 @@ class ConsoleLoggerPro {
 
 /// Collects the lines of one box and prints them together.
 class _Box {
-  _Box(this._logger);
+  _Box(this._logger, {int? gap}) : _gap = gap ?? _logger.lineGap;
 
   final ConsoleLoggerPro _logger;
+  final int _gap;
   final List<String> _lines = <String>[];
 
   LogTheme get _t => _logger.theme;
@@ -450,7 +702,7 @@ class _Box {
     for (final line in _lines) {
       buffer.writeln(line);
     }
-    for (var i = 0; i < _logger.lineGap; i++) {
+    for (var i = 0; i < _gap; i++) {
       buffer.writeln('\u2800' * (i + 1));
     }
     _logger._printer(buffer.toString().trimRight());
