@@ -56,7 +56,7 @@ Here is how network requests appear in the debug console with color-coded HTTP m
 
 ## Key Features
 
-- **Zero-Boilerplate Setup**: Just one line `ConsoleLoggerPro.install()` in `main()`—captures all `http`, `Dio`, and native `dart:io` traffic with zero interceptors required.
+- **Zero-Boilerplate Setup**: Just one line `ConsoleLoggerPro.install()` in `main()` - captures all `http`, `Dio`, and native `dart:io` traffic with zero interceptors required.
 - **Full Request Visibility**: Dedicated `[Request Headers]` (Bright Cyan) and `[Request Body]` (Pink) rendered right above `[Response]` (Gold) so you know exactly what payload and auth went out.
 - **Bulletproof Error & Failure Logs**: When an API call fails (4xx, 5xx, or network timeouts), it prints the complete request headers, payload, response error, and stack trace frames.
 - **Auto-Copy Security Tokens**: Instantly detects JWTs, Bearer tokens, and API keys, highlights them, and automatically copies them to your clipboard for zero-click Postman pasting.
