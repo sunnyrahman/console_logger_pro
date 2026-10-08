@@ -281,10 +281,24 @@ class ConsoleLoggerPro {
           tokens);
     }
     if (responseBody != null && responseBody != '') {
+      // Two blank spacer rows before Response for visual separation
+      box.row('');
+      box.row('');
+      final responseHint = _buildResponseHint(statusCode, statusMessage, failed);
       _section(
-          box, 'Response', _normalize(responseBody), theme.response, tokens);
+        box,
+        'Response',
+        _normalize(responseBody),
+        theme.response,
+        tokens,
+        hint: responseHint,
+      );
     }
-    if (error != null) _writeError(box, error, stackTrace);
+    if (error != null) {
+      box.row('');
+      box.row('');
+      _writeError(box, error, stackTrace);
+    }
     _writeTokens(box, tokens);
     box
       ..bottom()
@@ -618,10 +632,46 @@ class ConsoleLoggerPro {
     String title,
     Object? data,
     LogColor color,
-    List<DetectedToken> tokens,
-  ) {
-    box.section(title, color);
+    List<DetectedToken> tokens, {
+    String? hint,
+  }) {
+    box.section(title, color, hint: hint);
     box.block(_render(data, color, tokens));
+  }
+
+  /// Builds a human-readable hint label for the Response section.
+  /// e.g. "200 OK", "401 Unauthorized", "FAILED"
+  String? _buildResponseHint(
+      int? statusCode, String? statusMessage, bool failed) {
+    if (statusCode == null) return failed ? 'FAILED' : null;
+    final msg = statusMessage != null && statusMessage.isNotEmpty
+        ? statusMessage
+        : _defaultStatusMessage(statusCode);
+    return '$statusCode $msg';
+  }
+
+  static String _defaultStatusMessage(int code) {
+    switch (code) {
+      case 200: return 'OK';
+      case 201: return 'Created';
+      case 204: return 'No Content';
+      case 301: return 'Moved Permanently';
+      case 302: return 'Found';
+      case 304: return 'Not Modified';
+      case 400: return 'Bad Request';
+      case 401: return 'Unauthorized';
+      case 403: return 'Forbidden';
+      case 404: return 'Not Found';
+      case 405: return 'Method Not Allowed';
+      case 408: return 'Request Timeout';
+      case 409: return 'Conflict';
+      case 422: return 'Unprocessable Entity';
+      case 429: return 'Too Many Requests';
+      case 500: return 'Internal Server Error';
+      case 502: return 'Bad Gateway';
+      case 503: return 'Service Unavailable';
+      default:  return code < 400 ? 'Success' : 'Error';
+    }
   }
 
   String _render(Object? data, LogColor color, List<DetectedToken> tokens) {

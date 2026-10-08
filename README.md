@@ -21,7 +21,7 @@ Or add it to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  console_logger_pro: ^1.0.0
+  console_logger_pro: ^1.1.0
 ```
 
 ## Usage

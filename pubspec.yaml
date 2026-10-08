@@ -1,6 +1,6 @@
 name: console_logger_pro
 description: Beautiful, zero-setup API logger for Flutter. Colorized HTTP & Dio request/response logs in the console with auto-copy security tokens and clear visual spacing.
-version: 1.1.0
+version: 1.2.0
 homepage: https://github.com/sunnyrahman/console_logger_pro
 repository: https://github.com/sunnyrahman/console_logger_pro
 issue_tracker: https://github.com/sunnyrahman/console_logger_pro/issues

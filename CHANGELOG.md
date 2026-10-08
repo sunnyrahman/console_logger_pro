@@ -1,3 +1,9 @@
+## 1.2.0
+
+- Response section now shows human-readable status code next to label: `[Response]  (200 OK)`, `[Response]  (401 Unauthorized)`.
+- Added 2 blank visual spacer lines before `[Response]` and `[Error]` sections for cleaner log readability.
+- Built-in status message map for common HTTP codes (200, 201, 400, 401, 403, 404, 422, 429, 500, 502, 503, etc.).
+
 ## 1.1.0
 
 - Added dedicated `[Request Headers]` section (default enabled) styled in Bright Cyan above `[Response]`.
