@@ -19,10 +19,35 @@ class DetectedToken {
 /// Keys use [LogTheme.key], values use the color passed to [format], tokens
 /// use [LogTheme.token] and URLs use [LogTheme.link].
 class ConsoleJsonFormatter {
-  ConsoleJsonFormatter(this.theme, {this.indent = 2});
+  ConsoleJsonFormatter(
+    this.theme, {
+    this.indent = 2,
+    this.collapseDepth,
+    this.maxArrayItems,
+    this.collapseKeys = const <String>[],
+    this.collapseListItems = false,
+    this.collapsePredicate,
+  });
 
   final LogTheme theme;
   final int indent;
+
+  /// If non-null, objects and arrays at nesting depth >= [collapseDepth]
+  /// are printed in collapsed format: `{...}` or `[...]`.
+  final int? collapseDepth;
+
+  /// Maximum items to print per array. Items beyond this count are collapsed
+  /// into comments like `// ... (N more items)`.
+  final int? maxArrayItems;
+
+  /// JSON keys whose values should be printed in collapsed format `{...}` or `[...]`.
+  final List<String> collapseKeys;
+
+  /// When `true`, objects inside arrays are collapsed into `{...}` like in Postman.
+  final bool collapseListItems;
+
+  /// Custom predicate to decide whether a value should be collapsed.
+  final bool Function(String? key, int level, Object? value)? collapsePredicate;
 
   /// Tokens found by the last call to [format].
   final List<DetectedToken> tokens = <DetectedToken>[];
@@ -61,10 +86,52 @@ class ConsoleJsonFormatter {
 
   String _pad(int level) => ' ' * (level * indent);
 
-  void _write(StringBuffer b, Object? v, int level, String? key) {
+  bool _shouldCollapse(String? key, int level, Object? v, {bool insideList = false}) {
+    if (collapsePredicate != null && collapsePredicate!(key, level, v)) {
+      return true;
+    }
+    if (collapseDepth != null && level >= collapseDepth!) {
+      return true;
+    }
+    if (key != null && collapseKeys.contains(key)) {
+      return true;
+    }
+    if (insideList && collapseListItems && (v is Map || v is Iterable)) {
+      return true;
+    }
+    return false;
+  }
+
+  void _collectTokens(Object? v, String? key) {
+    if (v is Map) {
+      for (final entry in v.entries) {
+        _collectTokens(entry.value, entry.key.toString());
+      }
+    } else if (v is Iterable) {
+      for (final item in v) {
+        _collectTokens(item, key);
+      }
+    } else if (v is String) {
+      if (_isToken(v, key)) {
+        tokens.add(DetectedToken(
+          key ?? 'token',
+          v.replaceFirst(_bearerRegex, ''),
+        ));
+      }
+    }
+  }
+
+  void _write(StringBuffer b, Object? v, int level, String? key, {bool insideList = false}) {
+    final shouldCollapse = _shouldCollapse(key, level, v, insideList: insideList);
+
     if (v is Map) {
       if (v.isEmpty) {
         b.write(_p('{}'));
+        return;
+      }
+      if (shouldCollapse) {
+        _collectTokens(v, key);
+        b.write(_p('{...}'));
         return;
       }
       b.writeln(_p('{'));
@@ -74,7 +141,7 @@ class ConsoleJsonFormatter {
         b.write(_pad(level + 1));
         b.write(theme.paint(theme.key, jsonEncode(k)));
         b.write(_p(': '));
-        _write(b, entries[i].value, level + 1, k);
+        _write(b, entries[i].value, level + 1, k, insideList: false);
         if (i < entries.length - 1) b.write(_p(','));
         b.writeln();
       }
@@ -86,12 +153,27 @@ class ConsoleJsonFormatter {
         b.write(_p('[]'));
         return;
       }
+      if (shouldCollapse) {
+        _collectTokens(v, key);
+        b.write(_p('[...]'));
+        return;
+      }
       b.writeln(_p('['));
-      for (var i = 0; i < list.length; i++) {
+      final limit = maxArrayItems ?? list.length;
+      final displayCount = list.length < limit ? list.length : limit;
+      for (var i = 0; i < displayCount; i++) {
         b.write(_pad(level + 1));
-        _write(b, list[i], level + 1, key);
-        if (i < list.length - 1) b.write(_p(','));
+        _write(b, list[i], level + 1, key, insideList: true);
+        if (i < displayCount - 1 || displayCount < list.length) b.write(_p(','));
         b.writeln();
+      }
+      if (displayCount < list.length) {
+        final remaining = list.length - displayCount;
+        b.write(_pad(level + 1));
+        b.writeln(theme.paint(theme.border, '// ... ($remaining more items)'));
+        for (var i = displayCount; i < list.length; i++) {
+          _collectTokens(list[i], key);
+        }
       }
       b.write(_pad(level));
       b.write(_p(']'));
@@ -106,7 +188,7 @@ class ConsoleJsonFormatter {
         json = (v as dynamic).toJson();
       } catch (_) {}
       if (json is Map || json is Iterable) {
-        _write(b, json, level, key);
+        _write(b, json, level, key, insideList: insideList);
       } else {
         b.write(_string(v.toString(), key));
       }

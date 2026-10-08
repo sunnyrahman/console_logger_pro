@@ -270,4 +270,119 @@ void main() {
     expect(text, contains('[Error]'));
     expect(text, contains('NetworkTimeoutException'));
   });
+
+  test('collapseDepth collapses nested objects into {...} and arrays into [...]', () {
+    final formatter = ConsoleJsonFormatter(
+      const LogTheme(useColors: false),
+      collapseDepth: 1,
+    );
+
+    final data = {
+      'level0': {
+        'level1': {'name': 'test'},
+      },
+    };
+
+    final result = formatter.format(data);
+    expect(result, contains('"level0": {...}'));
+  });
+
+  test('collapseKeys collapses specified keys like data into [...]', () {
+    final formatter = ConsoleJsonFormatter(
+      const LogTheme(useColors: false),
+      collapseKeys: ['data'],
+    );
+
+    final data = {
+      'success': true,
+      'code': 200,
+      'data': [
+        {'id': 1, 'name': 'Toyota'},
+        {'id': 2, 'name': 'Honda'},
+      ],
+      'pagination': {'total': 2},
+    };
+
+    final result = formatter.format(data);
+    expect(result, contains('"data": [...]'));
+    expect(result, contains('"pagination": {'));
+  });
+
+  test('collapseListItems collapses objects inside arrays to {...} matching Postman', () {
+    final formatter = ConsoleJsonFormatter(
+      const LogTheme(useColors: false),
+      collapseListItems: true,
+    );
+
+    final data = {
+      'data': [
+        {'id': 7, 'name': 'Toyota Hiace'},
+        {'id': 8, 'name': 'Nissan Caravan'},
+      ],
+    };
+
+    final result = formatter.format(data);
+    expect(result, contains('{...}'));
+    expect(result, isNot(contains('"Toyota Hiace"')));
+  });
+
+  test('maxArrayItems limits array output with item count summary', () {
+    final formatter = ConsoleJsonFormatter(
+      const LogTheme(useColors: false),
+      maxArrayItems: 2,
+    );
+
+    final data = {
+      'items': [1, 2, 3, 4, 5],
+    };
+
+    final result = formatter.format(data);
+    expect(result, contains('1,'));
+    expect(result, contains('2,'));
+    expect(result, contains('// ... (3 more items)'));
+  });
+
+  test('tokens inside collapsed JSON are still captured and detected', () {
+    final formatter = ConsoleJsonFormatter(
+      const LogTheme(useColors: false),
+      collapseKeys: ['auth'],
+    );
+
+    final data = {
+      'auth': {
+        'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
+      },
+    };
+
+    final result = formatter.format(data);
+    expect(result, contains('"auth": {...}'));
+    expect(formatter.tokens, hasLength(1));
+    expect(formatter.tokens.first.value, contains('eyJhbGci'));
+  });
+
+  test('ConsoleLoggerPro stores history of network requests in memory', () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+      maxHistoryLength: 10,
+    );
+
+    logger.clearRecords();
+    expect(logger.records, isEmpty);
+
+    logger.logApi(
+      method: 'GET',
+      url: 'https://api.test/items',
+      statusCode: 200,
+      responseBody: {'count': 5},
+    );
+
+    expect(logger.records, hasLength(1));
+    expect(logger.records.first.method, 'GET');
+    expect(logger.records.first.url, 'https://api.test/items');
+    expect(logger.records.first.statusCode, 200);
+    expect(logger.records.first.statusLabel, contains('200'));
+  });
 }

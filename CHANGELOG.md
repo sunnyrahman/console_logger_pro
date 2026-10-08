@@ -1,3 +1,11 @@
+## 1.3.0
+
+- **Postman-Style JSON Collapsing in Console**: Added `collapseDepth`, `collapseKeys`, `collapseListItems`, `maxArrayItems`, and `collapsePredicate` parameters to `ConsoleLoggerPro` and `ConsoleJsonFormatter` to format large objects and arrays into `{...}` and `[...]` matching Postman's folding feature.
+- **In-App Network Inspector (`ConsoleLoggerPro.showInspector`)**: Full-featured in-app dark modal bottom sheet that tracks recent requests in memory with clickable bracket-to-bracket JSON folding, HTTP method badges, status labels, headers viewer, and 1-tap token copying.
+- **Interactive `JsonTreeViewer` Widget**: Standalone embeddable Flutter widget with real clickable bracket folding (`{...}` and `[...]`), Expand All, Collapse All, Copy JSON, and search filtering.
+- **Direct JSON Modal (`ConsoleLoggerPro.showJsonViewer`)**: Open any JSON data in an interactive collapsible dialog with zero setup.
+- Token detection now preserves and captures security tokens even from collapsed JSON payloads.
+
 ## 1.2.0
 
 - Response section now shows human-readable status code next to label: `[Response]  (200 OK)`, `[Response]  (401 Unauthorized)`.

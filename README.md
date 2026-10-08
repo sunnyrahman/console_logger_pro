@@ -21,7 +21,7 @@ Or add it to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  console_logger_pro: ^1.1.0
+  console_logger_pro: ^1.2.0
 ```
 
 ## Usage
@@ -54,8 +54,9 @@ Here is how network requests appear in the debug console with color-coded HTTP m
   <img src="https://raw.githubusercontent.com/sunnyrahman/console_logger_pro/main/screenshots/preview2.png" alt="Console Output Detailed Preview" width="100%"/>
 </p>
 
-## Key Features
-
+- **Postman-Style JSON Collapsing**: Automatically collapses large payloads, arrays, and nested objects into `{...}` or `[...]` with `collapseDepth`, `collapseKeys`, `collapseListItems`, or `maxArrayItems`.
+- **In-App Interactive Network Inspector**: Open a gorgeous Postman-like inspector inside your Flutter app (`ConsoleLoggerPro.showInspector(context)`) with clickable bracket-to-bracket folding (`{...}` / `[...]`), search filtering, and 1-tap token copying.
+- **Interactive JsonTreeViewer Widget**: Embeddable Flutter tree widget (`JsonTreeViewer(data: json)`) with Expand All, Collapse All, Copy JSON, and in-tree search.
 - **Zero-Boilerplate Setup**: Just one line `ConsoleLoggerPro.install()` in `main()` - captures all `http`, `Dio`, and native `dart:io` traffic with zero interceptors required.
 - **Full Request Visibility**: Dedicated `[Request Headers]` (Bright Cyan) and `[Request Body]` (Pink) rendered right above `[Response]` (Gold) so you know exactly what payload and auth went out.
 - **Bulletproof Error & Failure Logs**: When an API call fails (4xx, 5xx, or network timeouts), it prints the complete request headers, payload, response error, and stack trace frames.
@@ -65,12 +66,37 @@ Here is how network requests appear in the debug console with color-coded HTTP m
 - **Atomic, Concurrent-Safe Output**: Each network call and debug message prints in an isolated, synchronized box with customizable spacing (`lineGap`) to prevent messy overlapping console lines.
 - **100% Production-Safe**: Automatically disabled outside `kDebugMode` with zero overhead in production.
 
+## In-App Inspector & Interactive JSON Folding
+
+You can open the built-in Postman-style Inspector anywhere in your Flutter app:
+
+```dart
+// Open full network inspector sheet (recent requests, headers, interactive tree):
+ConsoleLoggerPro.showInspector(context);
+
+// Or view any JSON with clickable bracket-to-bracket folding:
+ConsoleLoggerPro.showJsonViewer(context, data: responseData, title: 'Order Details');
+```
+
+Or embed `JsonTreeViewer` directly in your own UI:
+
+```dart
+JsonTreeViewer(
+  data: myComplexJson,
+  initiallyExpanded: true,
+)
+```
+
 ## Customization
 
 You can pass configuration options to `ConsoleLoggerPro.install()`:
 
 ```dart
 ConsoleLoggerPro.install(
+  collapseDepth: 2,           // Auto-collapse objects deeper than 2 levels into {...}
+  collapseKeys: ['data'],      // Auto-collapse specific keys (e.g. "data": [...])
+  collapseListItems: true,    // Collapse items in arrays to {...} like Postman
+  maxArrayItems: 5,           // Show first 5 items, summarize rest
   logger: ConsoleLoggerPro(
     lineGap: 2,                 // Empty lines between requests (default: 3)
     autoCopyToken: true,        // Copy detected tokens to clipboard (default: true)

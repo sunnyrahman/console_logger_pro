@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'api_call_record.dart';
 import 'console_json_formatter.dart';
 import 'http_capture_stub.dart' if (dart.library.io) 'http_capture_io.dart';
 import 'log_color.dart';
 import 'log_theme.dart';
+import 'ui/console_inspector_sheet.dart';
 
 /// Receives one console line at a time.
 typedef LogPrinter = void Function(String line);
@@ -45,6 +48,12 @@ class ConsoleLoggerPro {
     this.lineGap = 3,
     this.maxLines = 300,
     this.lineWidth = 80,
+    this.collapseDepth,
+    this.maxArrayItems,
+    this.collapseKeys = const <String>[],
+    this.collapseListItems = false,
+    this.collapsePredicate,
+    this.maxHistoryLength = 50,
     LogPrinter? printer,
   })  : enabled = enabled ?? kDebugMode,
         _printer = printer ?? _defaultPrinter;
@@ -83,6 +92,29 @@ class ConsoleLoggerPro {
   /// Width of the box framing lines.
   final int lineWidth;
 
+  /// If non-null, JSON objects/arrays at nesting depth >= [collapseDepth]
+  /// are printed in collapsed format: `{...}` or `[...]`.
+  final int? collapseDepth;
+
+  /// Maximum items to print per array. Items beyond this count are collapsed
+  /// into comments like `// ... (N more items)`.
+  final int? maxArrayItems;
+
+  /// Specific JSON keys whose values should be printed in collapsed format `{...}` or `[...]`.
+  final List<String> collapseKeys;
+
+  /// When `true`, objects inside arrays are collapsed into `{...}` like in Postman.
+  final bool collapseListItems;
+
+  /// Custom predicate to decide whether a value should be collapsed.
+  final bool Function(String? key, int level, Object? value)? collapsePredicate;
+
+  /// Maximum number of recent network call records retained in memory for in-app inspection.
+  final int maxHistoryLength;
+
+  /// In-memory ring buffer of recent network calls captured by this logger.
+  final List<ApiCallRecord> records = <ApiCallRecord>[];
+
   final LogPrinter _printer;
   final Set<String> _shownTokens = <String>{};
 
@@ -100,6 +132,38 @@ class ConsoleLoggerPro {
   static ConsoleLoggerPro get shared => _shared ??= ConsoleLoggerPro();
   static set shared(ConsoleLoggerPro logger) => _shared = logger;
 
+  /// In-memory history of recent API network calls captured by this logger.
+  static List<ApiCallRecord> get history => shared.records;
+
+  /// Clears in-memory history of captured network calls.
+  static void clearHistory() => shared.clearRecords();
+
+  /// Displays the interactive In-App Network Inspector modal sheet.
+  ///
+  /// Every request/response JSON has real clickable bracket-to-bracket
+  /// collapse/expand (`{...}` and `[...]`) like Postman!
+  static Future<void> showInspector(BuildContext context) =>
+      ConsoleInspectorSheet.show(
+        context,
+        records: shared.records,
+        onClear: clearHistory,
+      );
+
+  /// Displays an interactive Postman-style collapsible JSON tree dialog for any [data].
+  static Future<void> showJsonViewer(
+    BuildContext context, {
+    required Object? data,
+    String title = 'JSON Viewer',
+  }) =>
+      ConsoleInspectorSheet.showJson(
+        context,
+        data: data,
+        title: title,
+      );
+
+  /// Clears in-memory history of captured calls for this instance.
+  void clearRecords() => records.clear();
+
   /// Logs every HTTP request made with `http`, Dio or `dart:io`.
   /// Call once, before `runApp`:
   ///
@@ -114,8 +178,29 @@ class ConsoleLoggerPro {
     bool Function(Uri uri)? filter,
     bool logBinary = false,
     int maxBodyBytes = 1024 * 1024,
+    int? collapseDepth,
+    int? maxArrayItems,
+    List<String>? collapseKeys,
+    bool? collapseListItems,
+    bool Function(String? key, int level, Object? value)? collapsePredicate,
+    int maxHistoryLength = 50,
   }) {
-    final target = logger ?? shared;
+    final target = logger ??
+        (collapseDepth != null ||
+                maxArrayItems != null ||
+                collapseKeys != null ||
+                collapseListItems != null ||
+                collapsePredicate != null ||
+                maxHistoryLength != 50
+            ? ConsoleLoggerPro(
+                collapseDepth: collapseDepth,
+                maxArrayItems: maxArrayItems,
+                collapseKeys: collapseKeys ?? const <String>[],
+                collapseListItems: collapseListItems ?? false,
+                collapsePredicate: collapsePredicate,
+                maxHistoryLength: maxHistoryLength,
+              )
+            : shared);
     _shared = target;
     if (!target.enabled) return;
     installHttpCapture(
@@ -258,6 +343,25 @@ class ConsoleLoggerPro {
     Duration? duration,
   }) {
     if (!enabled) return;
+    if (maxHistoryLength > 0) {
+      if (records.length >= maxHistoryLength) records.removeAt(0);
+      records.add(ApiCallRecord(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        timestamp: DateTime.now(),
+        method: method,
+        url: url,
+        statusCode: statusCode,
+        statusMessage: statusMessage,
+        requestHeaders: requestHeaders,
+        requestBody: requestBody,
+        requestBodyType: requestBodyType,
+        responseHeaders: responseHeaders,
+        responseBody: responseBody,
+        error: error,
+        stackTrace: stackTrace,
+        duration: duration,
+      ));
+    }
     final tokens = <DetectedToken>[];
     final box = _Box(this)..top();
     box.row(_endpointLine(method, url));
@@ -675,7 +779,14 @@ class ConsoleLoggerPro {
   }
 
   String _render(Object? data, LogColor color, List<DetectedToken> tokens) {
-    final f = ConsoleJsonFormatter(theme);
+    final f = ConsoleJsonFormatter(
+      theme,
+      collapseDepth: collapseDepth,
+      maxArrayItems: maxArrayItems,
+      collapseKeys: collapseKeys,
+      collapseListItems: collapseListItems,
+      collapsePredicate: collapsePredicate,
+    );
     final text = f.format(data, color: color);
     for (final t in f.tokens) {
       if (!tokens.any((x) => x.value == t.value)) tokens.add(t);
