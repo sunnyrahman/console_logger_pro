@@ -1,4 +1,8 @@
 
+## 1.2.2
+
+- Updated preview screenshots and documentation assets.
+
 ## 1.2.1
 
 - Changed `autoCopyToken` default to `false` to prevent unwanted Android OS clipboard overlays.
