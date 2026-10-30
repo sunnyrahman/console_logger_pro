@@ -93,13 +93,13 @@ You can pass configuration options to `ConsoleLoggerPro.install()`:
 
 ```dart
 ConsoleLoggerPro.install(
+  autoCopyToken: true,        // Automatically copy tokens to clipboard (default: false)
   collapseDepth: 2,           // Auto-collapse objects deeper than 2 levels into {...}
   collapseKeys: ['data'],      // Auto-collapse specific keys (e.g. "data": [...])
   collapseListItems: true,    // Collapse items in arrays to {...} like Postman
   maxArrayItems: 5,           // Show first 5 items, summarize rest
   logger: ConsoleLoggerPro(
     lineGap: 2,                 // Empty lines between requests (default: 3)
-    autoCopyToken: true,        // Copy detected tokens to clipboard (default: true)
     showRequestHeaders: true,   // Print request headers above response (default: true)
     showResponseHeaders: false, // Print response headers (default: false)
     lineWidth: 80,              // Frame width in characters (default: 80)

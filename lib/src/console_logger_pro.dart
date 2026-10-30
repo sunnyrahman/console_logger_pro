@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'api_call_record.dart';
 import 'console_json_formatter.dart';
 import 'http_capture_stub.dart' if (dart.library.io) 'http_capture_io.dart';
@@ -44,7 +42,7 @@ class ConsoleLoggerPro {
     this.showResponseHeaders = false,
     this.showTokens = true,
     this.repeatTokens = true,
-    this.autoCopyToken = true,
+    this.autoCopyToken = false,
     this.lineGap = 3,
     this.maxLines = 300,
     this.lineWidth = 80,
@@ -78,8 +76,10 @@ class ConsoleLoggerPro {
   /// already printed once are shortened to avoid repetition.
   final bool repeatTokens;
 
-  /// When `true` (default), newly detected security tokens are automatically
+  /// When `true`, newly detected security tokens are automatically
   /// copied to the system clipboard for zero-click pasting in Postman, etc.
+  /// Defaults to `false` to avoid unwanted system clipboard overlays (e.g. on
+  /// Android 13+) and overwriting user clipboard data.
   final bool autoCopyToken;
 
   /// Number of blank lines printed after each API log block for clear separation.
@@ -173,8 +173,13 @@ class ConsoleLoggerPro {
   ///   runApp(const MyApp());
   /// }
   /// ```
+  ///
+  /// Pass [autoCopyToken] as `true` to automatically copy detected security tokens
+  /// to the system clipboard (defaults to `false` to prevent unwanted Android OS
+  /// clipboard overlays).
   static void install({
     ConsoleLoggerPro? logger,
+    bool autoCopyToken = false,
     bool Function(Uri uri)? filter,
     bool logBinary = false,
     int maxBodyBytes = 1024 * 1024,
@@ -186,21 +191,15 @@ class ConsoleLoggerPro {
     int maxHistoryLength = 50,
   }) {
     final target = logger ??
-        (collapseDepth != null ||
-                maxArrayItems != null ||
-                collapseKeys != null ||
-                collapseListItems != null ||
-                collapsePredicate != null ||
-                maxHistoryLength != 50
-            ? ConsoleLoggerPro(
-                collapseDepth: collapseDepth,
-                maxArrayItems: maxArrayItems,
-                collapseKeys: collapseKeys ?? const <String>[],
-                collapseListItems: collapseListItems ?? false,
-                collapsePredicate: collapsePredicate,
-                maxHistoryLength: maxHistoryLength,
-              )
-            : shared);
+        ConsoleLoggerPro(
+          autoCopyToken: autoCopyToken,
+          collapseDepth: collapseDepth,
+          maxArrayItems: maxArrayItems,
+          collapseKeys: collapseKeys ?? const <String>[],
+          collapseListItems: collapseListItems ?? false,
+          collapsePredicate: collapsePredicate,
+          maxHistoryLength: maxHistoryLength,
+        );
     _shared = target;
     if (!target.enabled) return;
     installHttpCapture(
@@ -385,10 +384,10 @@ class ConsoleLoggerPro {
           tokens);
     }
     if (responseBody != null && responseBody != '') {
-      // Two blank spacer rows before Response for visual separation
-      box.row('');
-      box.row('');
-      final responseHint = _buildResponseHint(statusCode, statusMessage, failed);
+      // Direct space gap before Response for visual separation (no borders or duplicate collapse)
+      box.spaceGap(2);
+      final responseHint =
+          _buildResponseHint(statusCode, statusMessage, failed);
       _section(
         box,
         'Response',
@@ -399,8 +398,7 @@ class ConsoleLoggerPro {
       );
     }
     if (error != null) {
-      box.row('');
-      box.row('');
+      box.spaceGap(2);
       _writeError(box, error, stackTrace);
     }
     _writeTokens(box, tokens);
@@ -756,25 +754,44 @@ class ConsoleLoggerPro {
 
   static String _defaultStatusMessage(int code) {
     switch (code) {
-      case 200: return 'OK';
-      case 201: return 'Created';
-      case 204: return 'No Content';
-      case 301: return 'Moved Permanently';
-      case 302: return 'Found';
-      case 304: return 'Not Modified';
-      case 400: return 'Bad Request';
-      case 401: return 'Unauthorized';
-      case 403: return 'Forbidden';
-      case 404: return 'Not Found';
-      case 405: return 'Method Not Allowed';
-      case 408: return 'Request Timeout';
-      case 409: return 'Conflict';
-      case 422: return 'Unprocessable Entity';
-      case 429: return 'Too Many Requests';
-      case 500: return 'Internal Server Error';
-      case 502: return 'Bad Gateway';
-      case 503: return 'Service Unavailable';
-      default:  return code < 400 ? 'Success' : 'Error';
+      case 200:
+        return 'OK';
+      case 201:
+        return 'Created';
+      case 204:
+        return 'No Content';
+      case 301:
+        return 'Moved Permanently';
+      case 302:
+        return 'Found';
+      case 304:
+        return 'Not Modified';
+      case 400:
+        return 'Bad Request';
+      case 401:
+        return 'Unauthorized';
+      case 403:
+        return 'Forbidden';
+      case 404:
+        return 'Not Found';
+      case 405:
+        return 'Method Not Allowed';
+      case 408:
+        return 'Request Timeout';
+      case 409:
+        return 'Conflict';
+      case 422:
+        return 'Unprocessable Entity';
+      case 429:
+        return 'Too Many Requests';
+      case 500:
+        return 'Internal Server Error';
+      case 502:
+        return 'Bad Gateway';
+      case 503:
+        return 'Service Unavailable';
+      default:
+        return code < 400 ? 'Success' : 'Error';
     }
   }
 
@@ -839,6 +856,11 @@ class _Box {
   void divider() => _lines.add(_b('├$_bar'));
   void row(String text) => _lines.add('${_b('│')} $text');
   void raw(String text) => _lines.add(text);
+  void spaceGap([int count = 2]) {
+    for (var i = 0; i < count; i++) {
+      _lines.add(' ' * (i + 1));
+    }
+  }
 
   void section(String title, LogColor color, {String? hint}) {
     final h = hint == null ? '' : '  ${_b('($hint)')}';

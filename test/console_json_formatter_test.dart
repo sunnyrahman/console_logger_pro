@@ -144,7 +144,8 @@ void main() {
         reason: 'Next API must come AFTER gap space');
   });
 
-  test('logApi outputs [Request Headers] and [Request Body] above [Response]', () {
+  test('logApi outputs [Request Headers] and [Request Body] above [Response]',
+      () {
     final lines = <String>[];
     final logger = ConsoleLoggerPro(
       enabled: true,
@@ -190,7 +191,8 @@ void main() {
     final lines = <String>[];
     final logger = ConsoleLoggerPro(
       enabled: true,
-      showRequestHeaders: false, // even when false, failed request MUST show full request
+      showRequestHeaders:
+          false, // even when false, failed request MUST show full request
       theme: const LogTheme(useColors: false),
       printer: lines.add,
     );
@@ -249,7 +251,8 @@ void main() {
     expect(text, contains('└'));
   });
 
-  test('print and error format into clean section with borders and stack trace', () {
+  test('print and error format into clean section with borders and stack trace',
+      () {
     final lines = <String>[];
     final logger = ConsoleLoggerPro(
       enabled: true,
@@ -271,7 +274,9 @@ void main() {
     expect(text, contains('NetworkTimeoutException'));
   });
 
-  test('collapseDepth collapses nested objects into {...} and arrays into [...]', () {
+  test(
+      'collapseDepth collapses nested objects into {...} and arrays into [...]',
+      () {
     final formatter = ConsoleJsonFormatter(
       const LogTheme(useColors: false),
       collapseDepth: 1,
@@ -308,7 +313,9 @@ void main() {
     expect(result, contains('"pagination": {'));
   });
 
-  test('collapseListItems collapses objects inside arrays to {...} matching Postman', () {
+  test(
+      'collapseListItems collapses objects inside arrays to {...} matching Postman',
+      () {
     final formatter = ConsoleJsonFormatter(
       const LogTheme(useColors: false),
       collapseListItems: true,
@@ -350,7 +357,8 @@ void main() {
 
     final data = {
       'auth': {
-        'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
+        'token':
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
       },
     };
 
@@ -384,5 +392,102 @@ void main() {
     expect(logger.records.first.url, 'https://api.test/items');
     expect(logger.records.first.statusCode, 200);
     expect(logger.records.first.statusLabel, contains('200'));
+  });
+
+  test(
+      'spacer before Response section has clean space gap without vertical borders',
+      () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+    );
+
+    logger.logApi(
+      method: 'GET',
+      url: 'https://api.test/data',
+      statusCode: 200,
+      requestHeaders: {'host': 'test.com'},
+      responseBody: {'success': true},
+    );
+
+    final allLines = lines.expand((b) => b.split('\n')).toList();
+    final responseIdx = allLines.indexWhere((l) => l.contains('[Response]'));
+    expect(responseIdx, greaterThan(2));
+
+    // The lines right before [Response] should be pure space gap (no │ border)
+    final lineBeforeResponse1 = allLines[responseIdx - 1];
+    final lineBeforeResponse2 = allLines[responseIdx - 2];
+
+    expect(lineBeforeResponse1, isNot(contains('│')));
+    expect(lineBeforeResponse2, isNot(contains('│')));
+    expect(lineBeforeResponse1.trim(), isEmpty);
+    expect(lineBeforeResponse2.trim(), isEmpty);
+
+    // Consecutive spacer lines should differ in length to prevent console line collapsing
+    expect(lineBeforeResponse1, isNot(equals(lineBeforeResponse2)));
+  });
+
+  test('ConsoleLoggerPro defaults autoCopyToken to false', () {
+    final logger = ConsoleLoggerPro();
+    expect(logger.autoCopyToken, isFalse);
+  });
+
+  test('Tokens hint is "triple-click line to copy" when autoCopyToken is false',
+      () {
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+      autoCopyToken: false,
+    );
+
+    logger.logApi(
+      method: 'GET',
+      url: 'https://api.test/profile',
+      statusCode: 200,
+      requestHeaders: {'authorization': 'Bearer test_token_xyz_123'},
+      responseBody: {'id': 1},
+    );
+
+    final out = lines.join('\n');
+    expect(out, contains('Tokens'));
+    expect(out, contains('triple-click line to copy'));
+    expect(out, isNot(contains('Copied to clipboard!')));
+  });
+
+  test('Tokens hint is "Copied to clipboard!" when autoCopyToken is true', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final lines = <String>[];
+    final logger = ConsoleLoggerPro(
+      enabled: true,
+      theme: const LogTheme(useColors: false),
+      printer: lines.add,
+      autoCopyToken: true,
+    );
+
+    logger.logApi(
+      method: 'GET',
+      url: 'https://api.test/profile',
+      statusCode: 200,
+      requestHeaders: {'authorization': 'Bearer test_token_xyz_123'},
+      responseBody: {'id': 1},
+    );
+
+    final out = lines.join('\n');
+    expect(out, contains('Tokens'));
+    expect(out, contains('Copied to clipboard!'));
+  });
+
+  test('install() accepts autoCopyToken parameter', () {
+    ConsoleLoggerPro.install(autoCopyToken: true);
+    expect(ConsoleLoggerPro.shared.autoCopyToken, isTrue);
+    ConsoleLoggerPro.uninstall();
+
+    ConsoleLoggerPro.install(autoCopyToken: false);
+    expect(ConsoleLoggerPro.shared.autoCopyToken, isFalse);
+    ConsoleLoggerPro.uninstall();
   });
 }

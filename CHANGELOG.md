@@ -1,4 +1,9 @@
 
+## 1.2.1
+
+- Changed `autoCopyToken` default to `false` to prevent unwanted Android OS clipboard overlays.
+- Added `autoCopyToken` parameter directly to `ConsoleLoggerPro.install()` for easier configuration.
+
 ## 1.2.0
 
 - Response section now shows human-readable status code next to label: `[Response]  (200 OK)`, `[Response]  (401 Unauthorized)`.
